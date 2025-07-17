@@ -5,9 +5,6 @@ const auth = require("../middleware/auth")
 
 const router = express.Router()
 
-// @route   GET /api/notes
-// @desc    Get user's notes
-// @access  Private
 router.get("/", auth, async (req, res) => {
   try {
     const notes = await Note.find({ user: req.user.id }).sort({ isPinned: -1, createdAt: -1 })
@@ -19,9 +16,6 @@ router.get("/", auth, async (req, res) => {
   }
 })
 
-// @route   POST /api/notes
-// @desc    Create a note
-// @access  Private
 router.post(
   "/",
   [
@@ -55,9 +49,6 @@ router.post(
   },
 )
 
-// @route   PUT /api/notes/:id
-// @desc    Update a note
-// @access  Private
 router.put(
   "/:id",
   [
@@ -78,7 +69,6 @@ router.put(
         return res.status(404).json({ message: "Note not found" })
       }
 
-      // Check if user owns the note
       if (note.user.toString() !== req.user.id.toString()) {
         return res.status(403).json({ message: "Not authorized" })
       }
@@ -99,9 +89,6 @@ router.put(
   },
 )
 
-// @route   DELETE /api/notes/:id
-// @desc    Delete a note
-// @access  Private
 router.delete("/:id", auth, async (req, res) => {
   try {
     const note = await Note.findById(req.params.id)
@@ -110,7 +97,6 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Note not found" })
     }
 
-    // Check if user owns the note
     if (note.user.toString() !== req.user.id.toString()) {
       return res.status(403).json({ message: "Not authorized" })
     }

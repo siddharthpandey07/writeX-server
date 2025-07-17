@@ -17,7 +17,7 @@ const auth = async (req, res, next) => {
     }
 
     req.user = user
-    req.user.id = String(user._id) // Ensure id is always a string
+    req.user.id = String(user._id)
     next()
   } catch (error) {
     res.status(401).json({ message: "Token is not valid" })

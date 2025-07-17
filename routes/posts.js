@@ -7,12 +7,8 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// Helper function to validate ObjectId
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// @route   GET /api/posts
-// @desc    Get all posts
-// @access  Private
 router.get("/", auth, async (req, res) => {
   try {
     const posts = await Post.find()
@@ -27,9 +23,6 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/posts
-// @desc    Create a post
-// @access  Private
 router.post(
   "/",
   [auth, body("content").notEmpty().withMessage("Content is required")],
@@ -42,7 +35,6 @@ router.post(
 
       const { content } = req.body;
 
-      // Validate user ID
       if (!req.user?._id) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -63,9 +55,6 @@ router.post(
   }
 );
 
-// @route   PUT /api/posts/:id
-// @desc    Update a post
-// @access  Private
 router.put(
   "/:id",
   [auth, body("content").notEmpty().withMessage("Content is required")],
@@ -76,7 +65,6 @@ router.put(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // Validate post ID
       if (!isValidObjectId(req.params.id)) {
         return res.status(400).json({ message: "Invalid post ID" });
       }
@@ -87,7 +75,6 @@ router.put(
         return res.status(404).json({ message: "Post not found" });
       }
 
-      // Validate user ID and ownership
       if (!req.user?._id || post.author.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: "Not authorized" });
       }
@@ -104,12 +91,8 @@ router.put(
   }
 );
 
-// @route   DELETE /api/posts/:id
-// @desc    Delete a post
-// @access  Private
 router.delete("/:id", auth, async (req, res) => {
   try {
-    // Validate post ID
     if (!isValidObjectId(req.params.id)) {
       return res.status(400).json({ message: "Invalid post ID" });
     }
@@ -120,7 +103,6 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    // Validate user ID and ownership
     if (!req.user?._id || post.author.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -133,17 +115,12 @@ router.delete("/:id", auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/posts/:id/like
-// @desc    Like/Unlike a post
-// @access  Private
 router.post("/:id/like", auth, async (req, res) => {
   try {
-    // Validate post ID
     if (!isValidObjectId(req.params.id)) {
       return res.status(400).json({ message: "Invalid post ID" });
     }
 
-    // Validate user ID
     if (!req.user?._id) {
       return res.status(401).json({ message: "User not authenticated" });
     }
@@ -159,7 +136,6 @@ router.post("/:id/like", auth, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if user is following the post author or is a follower
     const postAuthor = await User.findById(post.author);
     if (!postAuthor) {
       return res.status(404).json({ message: "Post author not found" });
@@ -181,10 +157,8 @@ router.post("/:id/like", auth, async (req, res) => {
     );
 
     if (likeIndex > -1) {
-      // Unlike
       post.likes.splice(likeIndex, 1);
     } else {
-      // Like
       post.likes.push({ user: req.user._id });
     }
 
@@ -196,9 +170,6 @@ router.post("/:id/like", auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/posts/:id/comment
-// @desc    Add comment to post
-// @access  Private
 router.post(
   "/:id/comment",
   [auth, body("content").notEmpty().withMessage("Comment content is required")],
@@ -209,12 +180,10 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      // Validate post ID
       if (!isValidObjectId(req.params.id)) {
         return res.status(400).json({ message: "Invalid post ID" });
       }
 
-      // Validate user ID
       if (!req.user?._id) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -230,7 +199,6 @@ router.post(
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Check if user is following the post author or is a follower
       const postAuthor = await User.findById(post.author);
       if (!postAuthor) {
         return res.status(404).json({ message: "Post author not found" });
@@ -264,17 +232,12 @@ router.post(
   }
 );
 
-// @route   DELETE /api/posts/:postId/comments/:commentId
-// @desc    Delete a comment (only by comment author)
-// @access  Private
 router.delete("/:postId/comments/:commentId", auth, async (req, res) => {
   try {
-    // Validate IDs
     if (!isValidObjectId(req.params.postId) || !isValidObjectId(req.params.commentId)) {
       return res.status(400).json({ message: "Invalid ID format" });
     }
 
-    // Validate user ID
     if (!req.user?._id) {
       return res.status(401).json({ message: "User not authenticated" });
     }
@@ -282,7 +245,6 @@ router.delete("/:postId/comments/:commentId", auth, async (req, res) => {
     const post = await Post.findById(req.params.postId);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Find the comment
     const commentIndex = post.comments.findIndex(
       (c) => c._id.toString() === req.params.commentId
     );
@@ -291,12 +253,10 @@ router.delete("/:postId/comments/:commentId", auth, async (req, res) => {
       return res.status(404).json({ message: "Comment not found" });
     }
 
-    // Check if user is the comment author
     if (post.comments[commentIndex].user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Not authorized to delete this comment" });
     }
 
-    // Remove the comment
     post.comments.splice(commentIndex, 1);
     await post.save();
     res.json({ message: "Comment deleted" });

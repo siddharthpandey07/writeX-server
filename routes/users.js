@@ -6,9 +6,6 @@ const auth = require("../middleware/auth");
 
 const router = express.Router();
 
-// @route   GET /api/users
-// @desc    Get all users (except current user)
-// @access  Private
 router.get("/", auth, async (req, res) => {
   try {
     const users = await User.find({ _id: { $ne: req.user.id } })
@@ -23,14 +20,10 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/:id
-// @desc    Get user by ID with their posts
-// @access  Private
 router.get("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ID
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
@@ -44,7 +37,6 @@ router.get("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Get user's posts
     const posts = await Post.find({ author: id })
       .populate("author", "username avatar")
       .populate("comments.user", "username avatar")
@@ -57,14 +49,10 @@ router.get("/:id", auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/users/:id/follow
-// @desc    Follow/Unfollow user
-// @access  Private
 router.post("/:id/follow", auth, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ID
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid user ID" });
     }
@@ -76,7 +64,6 @@ router.post("/:id/follow", auth, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if user is trying to follow themselves
     if (id === req.user.id.toString()) {
       return res.status(400).json({ message: "You cannot follow yourself" });
     }
@@ -84,7 +71,6 @@ router.post("/:id/follow", auth, async (req, res) => {
     const isFollowing = currentUser.following.includes(id);
 
     if (isFollowing) {
-      // Unfollow
       currentUser.following = currentUser.following.filter(
         (userId) => userId.toString() !== id
       );
@@ -92,7 +78,6 @@ router.post("/:id/follow", auth, async (req, res) => {
         (userId) => userId.toString() !== req.user.id.toString()
       );
     } else {
-      // Follow
       currentUser.following.push(id);
       userToFollow.followers.push(req.user.id);
     }
@@ -111,19 +96,14 @@ router.post("/:id/follow", auth, async (req, res) => {
   }
 });
 
-// @route   PUT /api/users/profile
-// @desc    Update user profile
-// @access  Private
 router.put("/profile", auth, async (req, res) => {
   try {
     const { bio, avatar, username } = req.body;
 
-    // Validate input
     if (!bio && !avatar && !username) {
       return res.status(400).json({ message: "No fields to update" });
     }
 
-    // Check if username is already taken
     if (username) {
       const existingUser = await User.findOne({ username });
       if (existingUser && existingUser._id.toString() !== req.user.id) {
@@ -149,9 +129,6 @@ router.put("/profile", auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/search/:query
-// @desc    Search users by username
-// @access  Private
 router.get("/search/:query", auth, async (req, res) => {
   try {
     const { query } = req.params;
@@ -174,9 +151,6 @@ router.get("/search/:query", auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/users/me/follow
-// @desc    Get current user's followers and following
-// @access  Private
 router.get("/me/follow", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
