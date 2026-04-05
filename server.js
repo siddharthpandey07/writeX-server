@@ -8,12 +8,15 @@ dotenv.config()
 
 const app = express()
 
+const normalizeOrigin = (value) =>
+  typeof value === "string" ? value.trim().replace(/\/+$/, "") : ""
+
 const parseClientOrigins = () => {
   const raw = process.env.CLIENT_URL
   if (!raw || !raw.trim()) return null
   return raw
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => normalizeOrigin(s))
     .filter(Boolean)
 }
 
@@ -29,7 +32,9 @@ const corsOptions = {
 if (clientOrigins && clientOrigins.length > 0) {
   corsOptions.origin = (origin, callback) => {
     if (!origin) return callback(null, true)
-    if (clientOrigins.includes(origin)) return callback(null, true)
+    const o = normalizeOrigin(origin)
+    if (clientOrigins.includes(o)) return callback(null, true)
+    console.warn(`[cors] blocked origin: ${origin}`)
     callback(null, false)
   }
 } else {
