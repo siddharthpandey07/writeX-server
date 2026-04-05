@@ -2,6 +2,9 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Backend server for MERN social app",
+  "engines": {
+    "node": ">=20"
+  },
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
