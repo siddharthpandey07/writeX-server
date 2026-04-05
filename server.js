@@ -47,10 +47,14 @@ app.use(express.json())
 app.use(morgan("dev"))
 
 app.get("/health", (req, res) => {
-  const dbOk = mongoose.connection.readyState === 1
+  // mongoose: 0=disconnected 1=connected 2=connecting 3=disconnecting
+  const readyState = mongoose.connection.readyState
+  const dbOk = readyState === 1
   res.status(200).json({
     status: "ok",
     db: dbOk ? "connected" : "disconnected",
+    mongoReadyState: readyState,
+    mongoConfigured: Boolean(process.env.MONGODB_URI),
   })
 })
 
