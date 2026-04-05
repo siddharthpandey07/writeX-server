@@ -69,15 +69,27 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
 });
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected successfully at", new Date().toISOString()))
-  .catch((err) => {
-    console.error("MongoDB connection error at", new Date().toISOString(), err)
-  })
-
 const PORT = process.env.PORT || 5000
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT} at ${new Date().toISOString()}`)
-})
+if (!process.env.MONGODB_URI) {
+  console.error("Missing MONGODB_URI — set it in Render environment variables.")
+  process.exit(1)
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error("Missing JWT_SECRET — set it in Render environment variables.")
+  process.exit(1)
+}
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("MongoDB connected successfully at", new Date().toISOString())
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT} at ${new Date().toISOString()}`)
+    })
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error at", new Date().toISOString(), err)
+    process.exit(1)
+  })

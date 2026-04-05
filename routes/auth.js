@@ -7,8 +7,11 @@ const auth = require("../middleware/auth")
 const router = express.Router()
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET is not configured")
+  }
+  return jwt.sign({ id: id.toString() }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || "7d",
   })
 }
 
@@ -53,6 +56,9 @@ router.post(
       })
     } catch (error) {
       console.error(error)
+      if (error.code === 11000) {
+        return res.status(400).json({ message: "User already exists" })
+      }
       res.status(500).json({ message: "Server error" })
     }
   },
