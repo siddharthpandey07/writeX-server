@@ -47,7 +47,11 @@ app.use(express.json())
 app.use(morgan("dev"))
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" })
+  const dbOk = mongoose.connection.readyState === 1
+  res.status(200).json({
+    status: "ok",
+    db: dbOk ? "connected" : "disconnected",
+  })
 })
 
 app.use("/api/auth", require("./routes/auth"))
@@ -72,24 +76,25 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000
 
 if (!process.env.MONGODB_URI) {
-  console.error("Missing MONGODB_URI — set it in Render environment variables.")
-  process.exit(1)
+  console.error(
+    "Missing MONGODB_URI — add it in Render → Environment. Signup/login will fail until it is set.",
+  )
+} else {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(() => console.log("MongoDB connected successfully at", new Date().toISOString()))
+    .catch((err) => {
+      console.error(
+        "MongoDB connection error — check Atlas IP allowlist (0.0.0.0/0) and MONGODB_URI:",
+        err.message,
+      )
+    })
 }
 
 if (!process.env.JWT_SECRET) {
-  console.error("Missing JWT_SECRET — set it in Render environment variables.")
-  process.exit(1)
+  console.warn("Missing JWT_SECRET — add it in Render; register/login will return errors until set.")
 }
 
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully at", new Date().toISOString())
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT} at ${new Date().toISOString()}`)
-    })
-  })
-  .catch((err) => {
-    console.error("MongoDB connection error at", new Date().toISOString(), err)
-    process.exit(1)
-  })
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT} at ${new Date().toISOString()}`)
+})
