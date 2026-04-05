@@ -8,7 +8,36 @@ dotenv.config()
 
 const app = express()
 
-app.use(cors())
+const parseClientOrigins = () => {
+  const raw = process.env.CLIENT_URL
+  if (!raw || !raw.trim()) return null
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+const clientOrigins = parseClientOrigins()
+
+const corsOptions = {
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+}
+
+if (clientOrigins && clientOrigins.length > 0) {
+  corsOptions.origin = (origin, callback) => {
+    if (!origin) return callback(null, true)
+    if (clientOrigins.includes(origin)) return callback(null, true)
+    callback(null, false)
+  }
+} else {
+  // Reflect request origin so credentials + browser preflight work (dev or before CLIENT_URL is set)
+  corsOptions.origin = true
+}
+
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use(morgan("dev"))
 
